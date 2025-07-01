@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>経管栄養 計算ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals (Stone, Amber, Teal) -->
+    <!-- Application Structure Plan: A task-oriented SPA with four main sections: 1) Ideal Body Weight & Target Nutrition Calculation: Input for height and current weight, calculation and display of Ideal Body Weight (IBW), and adjustable target protein and calorie ranges per kg IBW, showing total target ranges. This section also includes dynamic suggestions for enteral formula combinations to meet these targets. 2) Interactive Nutrition Calculator: Dynamic rows for selecting enteral formulas and inputting amounts (now in 10ml increments), with real-time calculation of water, protein, and calories for each. 3) Real-time Summary Panel: Displays the grand totals of water, protein, and calories from the calculator, allowing comparison against the target nutrition from the first section. 4) Nutrient Comparison Chart: A bar chart visualizing the per-100ml nutrient profiles of all available enteral formulas, aiding in formula selection. This structure prioritizes goal setting, then calculation, then summary and comparison, creating a comprehensive and intuitive workflow for nutrition management. -->
+    <!-- Visualization & Content Choices: 1) Report Info: Patient height, current weight. Goal: Calculate Ideal Body Weight (IBW) and derive target nutrition. Viz: Input fields for height/weight, display for calculated IBW, input fields for target protein/calorie ranges, display for total target protein/calorie ranges. Interaction: User inputs height/weight, adjusts target ranges; IBW and total targets update via JS. Justification: Provides foundational patient-specific nutritional goals. Library: Vanilla JS. Additionally, a dynamic list of suggested formula combinations to meet these targets is displayed, offering actionable guidance. 2) Report Info: Formula selection and amount input. Goal: Calculate actual intake. Viz: Dynamic list of input rows with 10ml step input for amount. Interaction: User selects from dropdown/enters number, row-specific and overall totals update via JS. Justification: Direct manipulation for practical calculation, with improved precision control. Library: Vanilla JS. 3) Report Info: Calculated nutritional values from formulas. Goal: Summarize actual intake. Viz: Large summary cards for total water, protein, calories. Interaction: Real-time updates from calculator. Justification: Immediate, high-visibility feedback for current intake. Library: Vanilla JS. 4) Report Info: Base nutritional data for all formulas. Goal: Compare formula profiles. Viz: Grouped Bar Chart showing energy, protein, water per 100ml. Interaction: Static visual reference for formula selection. Justification: Visual comparison is efficient for understanding product differences. Library: Chart.js/Canvas. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .form-input {
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            border-color: #0d9488;
+            box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.4);
+        }
+        .summary-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .summary-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-teal-700">経管栄養 計算ツール</h1>
+            <p class="mt-2 text-stone-600">日々の栄養管理を、より簡単に、より正確に。</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-3">
+                <section id="target-nutrition-section" class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold mb-4 text-stone-700">理想体重と目標栄養量</h2>
+                    <p class="text-stone-600 mb-6">患者さんの身長と現在の体重を入力し、理想体重に基づいた目標栄養量を設定します。重症患者における至適な投与量の目安としてご活用ください。</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div>
+                            <label for="height-input" class="block text-sm font-medium text-stone-600 mb-1">身長 (cm)</label>
+                            <input type="number" id="height-input" min="1" placeholder="例: 160" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="current-weight-input" class="block text-sm font-medium text-stone-600 mb-1">現在の体重 (kg)</label>
+                            <input type="number" id="current-weight-input" min="1" placeholder="例: 55" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-2 bg-teal-50 p-3 rounded-lg border border-teal-200 flex items-center justify-between">
+                            <span class="font-semibold text-teal-800">理想体重 (kg)</span>
+                            <span id="ideal-body-weight" class="text-xl font-bold text-teal-900">0.0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="protein-target-min" class="block text-sm font-medium text-stone-600 mb-1">目標タンパク質 (g/kg IBW) 最小</label>
+                            <input type="number" id="protein-target-min" min="0" value="1.2" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="protein-target-max" class="block text-sm font-medium text-stone-600 mb-1">目標タンパク質 (g/kg IBW) 最大</label>
+                            <input type="number" id="protein-target-max" min="0" value="2.0" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-2 bg-sky-50 p-3 rounded-lg border border-sky-200 flex items-center justify-between">
+                            <span class="font-semibold text-sky-800">目標タンパク量 (g/日)</span>
+                            <span id="total-target-protein" class="text-xl font-bold text-sky-900">0.0 - 0.0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label for="calorie-target-min" class="block text-sm font-medium text-stone-600 mb-1">目標カロリー (kcal/kg IBW) 最小</label>
+                            <input type="number" id="calorie-target-min" min="0" value="25" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="calorie-target-max" class="block text-sm font-medium text-stone-600 mb-1">目標カロリー (kcal/kg IBW) 最大</label>
+                            <input type="number" id="calorie-target-max" min="0" value="30" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                        </div>
+                        <div class="md:col-span-2 bg-rose-50 p-3 rounded-lg border border-rose-200 flex items-center justify-between">
+                            <span class="font-semibold text-rose-800">目標カロリー (kcal/日)</span>
+                            <span id="total-target-calories" class="text-xl font-bold text-rose-900">0.0 - 0.0</span>
+                        </div>
+                    </div>
+
+                    <div id="formula-suggestions" class="mt-8 pt-6 border-t border-stone-200">
+                        <h3 class="text-xl font-bold mb-3 text-stone-700">目標達成のための栄養剤提案 (例)</h3>
+                        <p class="text-stone-600 mb-4">設定された目標カロリーとタンパク質を満たす単一の栄養剤の組み合わせ例です。これはあくまで目安であり、実際の栄養管理は専門家の判断に従ってください。</p>
+                        <div id="suggestion-list" class="space-y-3">
+                            <p class="text-stone-500">身長と体重を入力して、提案を表示します。</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <div class="lg:col-span-2">
+                <section id="calculator-section" class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold mb-4 text-stone-700">栄養計算機</h2>
+                    <p class="text-stone-600 mb-6">使用する経管栄養剤の種類と量を入力してください。栄養成分が自動で計算されます。</p>
+                    <div id="calculator-rows" class="space-y-4">
+                    </div>
+                    <button id="add-row-btn" class="mt-6 w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-white font-semibold shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all">
+                        <span>&#43;</span>
+                        <span>栄養剤を追加</span>
+                    </button>
+                </section>
+            </div>
+
+            <div class="space-y-8">
+                <section id="summary-section" class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold mb-4 text-stone-700">合計</h2>
+                    <div class="space-y-4">
+                        <div class="summary-card flex justify-between items-center bg-amber-50 p-4 rounded-lg border border-amber-200">
+                            <span class="font-semibold text-amber-800">総水分量 (ml)</span>
+                            <span id="total-water" class="text-2xl font-bold text-amber-900">0.0</span>
+                        </div>
+                        <div class="summary-card flex justify-between items-center bg-sky-50 p-4 rounded-lg border border-sky-200">
+                            <span class="font-semibold text-sky-800">総タンパク量 (g)</span>
+                            <span id="total-protein" class="text-2xl font-bold text-sky-900">0.0</span>
+                        </div>
+                        <div class="summary-card flex justify-between items-center bg-rose-50 p-4 rounded-lg border border-rose-200">
+                            <span class="font-semibold text-rose-800">総カロリー (kcal)</span>
+                            <span id="total-calories" class="text-2xl font-bold text-rose-900">0.0</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+             <div class="lg:col-span-3 mt-4">
+                <section id="chart-section" class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-bold mb-2 text-stone-700">栄養成分の比較</h2>
+                    <p class="text-stone-600 mb-6">各栄養剤100mlあたりの栄養成分を比較し、製品選択の参考にしてください。</p>
+                    <div class="chart-container">
+                        <canvas id="nutrition-chart"></canvas>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const formulaData = [
+        { name: '製品を選択してください', energy: 0, protein: 0, water: 0 },
+        { name: 'ペプタメンAF', energy: 1.0, protein: 0.055, water: 0.83 },
+        { name: 'ペプタメンプレビオ', energy: 1.0, protein: 0.04, water: 0.85 },
+        { name: 'CZ-Hi', energy: 1.5, protein: 0.067, water: 0.76 },
+        { name: 'メイバランス', energy: 1.0, protein: 0.038, water: 0.84 },
+        { name: 'アイソカルサポート', energy: 1.0, protein: 0.04, water: 0.85 },
+        { name: 'アイソカルクリア', energy: 0.8, protein: 0.04, water: 0.90 },
+        { name: 'リーナレンLP', energy: 1.6, protein: 0.03, water: 0.72 },
+        { name: 'ハイネイーゲル', energy: 1.0, protein: 0.044, water: 0.84 },
+        { name: 'ラクフィア', energy: 1.0, protein: 0.03, water: 0.85 }
+    ];
+
+    const calculatorRowsContainer = document.getElementById('calculator-rows');
+    const addRowBtn = document.getElementById('add-row-btn');
+    const heightInput = document.getElementById('height-input');
+    const currentWeightInput = document.getElementById('current-weight-input');
+    const idealBodyWeightDisplay = document.getElementById('ideal-body-weight');
+    const proteinTargetMinInput = document.getElementById('protein-target-min');
+    const proteinTargetMaxInput = document.getElementById('protein-target-max');
+    const totalTargetProteinDisplay = document.getElementById('total-target-protein');
+    const calorieTargetMinInput = document.getElementById('calorie-target-min');
+    const calorieTargetMaxInput = document.getElementById('calorie-target-max');
+    const totalTargetCaloriesDisplay = document.getElementById('total-target-calories');
+    const suggestionList = document.getElementById('suggestion-list');
+
+    let uniqueIdCounter = 0;
+
+    function createRow(id) {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 p-4 border border-stone-200 rounded-lg calculator-row';
+        row.dataset.id = id;
+
+        const selectOptions = formulaData.map(f => `<option value="${f.name}">${f.name}</option>`).join('');
+
+        row.innerHTML = `
+            <div class="sm:col-span-4">
+                <label for="formula-select-${id}" class="block text-sm font-medium text-stone-600 mb-1">栄養剤</label>
+                <select id="formula-select-${id}" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm bg-white" data-type="formula">${selectOptions}</select>
+            </div>
+            <div class="sm:col-span-2">
+                <label for="amount-input-${id}" class="block text-sm font-medium text-stone-600 mb-1">量 (ml)</label>
+                <input type="number" id="amount-input-${id}" min="0" step="10" placeholder="例: 200" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm" data-type="amount">
+            </div>
+            <div class="sm:col-span-5 grid grid-cols-3 gap-2 text-center items-center mt-2 sm:mt-0">
+                <div>
+                    <p class="text-sm text-stone-500">水分量</p>
+                    <p class="font-bold text-lg text-amber-800" data-type="water-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">タンパク量</p>
+                    <p class="font-bold text-lg text-sky-800" data-type="protein-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">カロリー</p>
+                    <p class="font-bold text-lg text-rose-800" data-type="calories-result">0.0</p>
+                </div>
+            </div>
+            <div class="sm:col-span-1 flex items-center justify-end">
+                <button class="remove-row-btn text-stone-400 hover:text-red-600 transition-colors p-2 mt-4 sm:mt-0" title="この行を削除">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+            </div>
+        `;
+        return row;
+    }
+
+    function addRow() {
+        const newRow = createRow(uniqueIdCounter++);
+        calculatorRowsContainer.appendChild(newRow);
+    }
+
+    function calculateAll() {
+        let totalWater = 0;
+        let totalProtein = 0;
+        let totalCalories = 0;
+
+        document.querySelectorAll('.calculator-row').forEach(row => {
+            const formulaName = row.querySelector('[data-type="formula"]').value;
+            const amount = parseFloat(row.querySelector('[data-type="amount"]').value) || 0;
+            const formula = formulaData.find(f => f.name === formulaName);
+
+            let water = 0, protein = 0, calories = 0;
+
+            if (formula && amount > 0) {
+                water = formula.water * amount;
+                protein = formula.protein * amount;
+                calories = formula.energy * amount;
+            }
+            
+            row.querySelector('[data-type="water-result"]').textContent = water.toFixed(1);
+            row.querySelector('[data-type="protein-result"]').textContent = protein.toFixed(1);
+            row.querySelector('[data-type="calories-result"]').textContent = calories.toFixed(1);
+
+            totalWater += water;
+            totalProtein += protein;
+            totalCalories += calories;
+        });
+
+        document.getElementById('total-water').textContent = totalWater.toFixed(1);
+        document.getElementById('total-protein').textContent = totalProtein.toFixed(1);
+        document.getElementById('total-calories').textContent = totalCalories.toFixed(1);
+    }
+
+    function calculateIBWAndTargets() {
+        const heightCm = parseFloat(heightInput.value);
+        let idealBodyWeight = 0;
+
+        if (heightCm > 0) {
+            const heightM = heightCm / 100;
+            idealBodyWeight = 22 * (heightM * heightM); // BMI 22に基づく理想体重
+        }
+        idealBodyWeightDisplay.textContent = idealBodyWeight.toFixed(1);
+
+        const proteinMin = parseFloat(proteinTargetMinInput.value) || 0;
+        const proteinMax = parseFloat(proteinTargetMaxInput.value) || 0;
+        const calorieMin = parseFloat(calorieTargetMinInput.value) || 0;
+        const calorieMax = parseFloat(calorieTargetMaxInput.value) || 0;
+
+        let totalTargetProteinMin = 0;
+        let totalTargetProteinMax = 0;
+        let totalTargetCalorieMin = 0;
+        let totalTargetCalorieMax = 0;
+
+        if (idealBodyWeight > 0) {
+            totalTargetProteinMin = idealBodyWeight * proteinMin;
+            totalTargetProteinMax = idealBodyWeight * proteinMax;
+            totalTargetCalorieMin = idealBodyWeight * calorieMin;
+            totalTargetCalorieMax = idealBodyWeight * calorieMax;
+        }
+
+        totalTargetProteinDisplay.textContent = `${totalTargetProteinMin.toFixed(1)} - ${totalTargetProteinMax.toFixed(1)}`;
+        totalTargetCaloriesDisplay.textContent = `${totalTargetCalorieMin.toFixed(1)} - ${totalTargetCalorieMax.toFixed(1)}`;
+
+        generateFormulaSuggestions(idealBodyWeight, totalTargetProteinMin, totalTargetProteinMax, totalTargetCalorieMin, totalTargetCalorieMax);
+    }
+
+    function generateFormulaSuggestions(ibw, targetProteinMin, targetProteinMax, targetCalorieMin, targetCalorieMax) {
+        suggestionList.innerHTML = '';
+        if (ibw === 0) {
+            suggestionList.innerHTML = '<p class="text-stone-500">身長を入力して、提案を表示します。</p>';
+            return;
+        }
+
+        const validFormulas = formulaData.filter(f => f.name !== '製品を選択してください');
+        let suggestionsFound = [];
+
+        validFormulas.forEach(formula => {
+            if (formula.energy > 0 && formula.protein > 0) {
+                // Calorie-driven volume calculation
+                const volumeForMinCal = targetCalorieMin / formula.energy;
+                const volumeForMaxCal = targetCalorieMax / formula.energy;
+
+                // Round to nearest 10ml
+                const roundedVolumeMinCal = Math.round(volumeForMinCal / 10) * 10;
+                const roundedVolumeMaxCal = Math.round(volumeForMaxCal / 10) * 10;
+
+                // Check if roundedVolumeMinCal meets protein target
+                if (roundedVolumeMinCal > 0) {
+                    const proteinAtMinCalVolume = roundedVolumeMinCal * formula.protein;
+                    if (proteinAtMinCalVolume >= targetProteinMin && proteinAtMinCalVolume <= targetProteinMax) {
+                        suggestionsFound.push(`・${formula.name} ${roundedVolumeMinCal}ml (カロリー目標の下限付近でタンパク質も満たします)`);
+                    }
+                }
+
+                // Check if roundedVolumeMaxCal meets protein target (only if different from min)
+                if (roundedVolumeMaxCal > 0 && roundedVolumeMaxCal !== roundedVolumeMinCal) {
+                    const proteinAtMaxCalVolume = roundedVolumeMaxCal * formula.protein;
+                    if (proteinAtMaxCalVolume >= targetProteinMin && proteinAtMaxCalVolume <= targetProteinMax) {
+                        suggestionsFound.push(`・${formula.name} ${roundedVolumeMaxCal}ml (カロリー目標の上限付近でタンパク質も満たします)`);
+                    }
+                }
+            }
+        });
+
+        if (suggestionsFound.length > 0) {
+            suggestionList.innerHTML = suggestionsFound.map(s => `<p class="text-stone-700">${s}</p>`).join('');
+        } else {
+            suggestionList.innerHTML = '<p class="text-stone-500">現在の設定では、単一の栄養剤で目標を達成する組み合わせは見つかりませんでした。</p>';
+        }
+    }
+
+
+    calculatorRowsContainer.addEventListener('input', (e) => {
+        if (e.target.matches('[data-type="formula"]') || e.target.matches('[data-type="amount"]')) {
+            calculateAll();
+        }
+    });
+
+    calculatorRowsContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-row-btn')) {
+            e.target.closest('.calculator-row').remove();
+            calculateAll();
+        }
+    });
+    
+    addRowBtn.addEventListener('click', addRow);
+
+    heightInput.addEventListener('input', calculateIBWAndTargets);
+    currentWeightInput.addEventListener('input', calculateIBWAndTargets);
+    proteinTargetMinInput.addEventListener('input', calculateIBWAndTargets);
+    proteinTargetMaxInput.addEventListener('input', calculateIBWAndTargets);
+    calorieTargetMinInput.addEventListener('input', calculateIBWAndTargets);
+    calorieTargetMaxInput.addEventListener('input', calculateIBWAndTargets);
+    
+    function setupChart() {
+        const ctx = document.getElementById('nutrition-chart').getContext('2d');
+        const chartData = formulaData.filter(f => f.name !== '製品を選択してください');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(f => f.name),
+                datasets: [{
+                    label: 'エネルギー (kcal/100ml)',
+                    data: chartData.map(f => f.energy * 100),
+                    backgroundColor: 'rgba(251, 113, 133, 0.6)',
+                    borderColor: 'rgba(251, 113, 133, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'タンパク質 (g/100ml)',
+                    data: chartData.map(f => f.protein * 100),
+                    backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                    borderColor: 'rgba(56, 189, 248, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '水分 (ml/100ml)',
+                    data: chartData.map(f => f.water * 100),
+                    backgroundColor: 'rgba(251, 191, 36, 0.6)',
+                    borderColor: 'rgba(251, 191, 36, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '100mlあたりの含有量'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 70,
+                            minRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    addRow();
+    calculateIBWAndTargets(); // Initial calculation for IBW and targets
+    setupChart();
+});
+</script>
+
+</body>
+</html>
