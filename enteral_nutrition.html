@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chosen Palette: Warm Neutrals (Stone, Amber, Teal) -->
-    <!-- Application Structure Plan: A task-oriented SPA with four main sections: 1) Ideal Body Weight & Target Nutrition Calculation: Input for height and current weight, calculation and display of Ideal Body Weight (IBW), and adjustable target protein and calorie ranges per kg IBW, showing total target ranges. This section also includes dynamic suggestions for enteral formula combinations to meet these targets. 2) Interactive Nutrition Calculator: Dynamic rows for selecting enteral formulas and inputting amounts (now in 10ml increments), with real-time calculation of water, protein, and calories for each. 3) Real-time Summary Panel: Displays the grand totals of water, protein, and calories from the calculator, allowing comparison against the target nutrition from the first section. 4) Nutrient Comparison Chart: A bar chart visualizing the per-100ml nutrient profiles of all available enteral formulas, aiding in formula selection. This structure prioritizes goal setting, then calculation, then summary and comparison, creating a comprehensive and intuitive workflow for nutrition management. -->
-    <!-- Visualization & Content Choices: 1) Report Info: Patient height, current weight. Goal: Calculate Ideal Body Weight (IBW) and derive target nutrition. Viz: Input fields for height/weight, display for calculated IBW, input fields for target protein/calorie ranges, display for total target protein/calorie ranges. Interaction: User inputs height/weight, adjusts target ranges; IBW and total targets update via JS. Justification: Provides foundational patient-specific nutritional goals. Library: Vanilla JS. Additionally, a dynamic list of suggested formula combinations to meet these targets is displayed, offering actionable guidance. 2) Report Info: Formula selection and amount input. Goal: Calculate actual intake. Viz: Dynamic list of input rows with 10ml step input for amount. Interaction: User selects from dropdown/enters number, row-specific and overall totals update via JS. Justification: Direct manipulation for practical calculation, with improved precision control. Library: Vanilla JS. 3) Report Info: Calculated nutritional values from formulas. Goal: Summarize actual intake. Viz: Large summary cards for total water, protein, calories. Interaction: Real-time updates from calculator. Justification: Immediate, high-visibility feedback for current intake. Library: Vanilla JS. 4) Report Info: Base nutritional data for all formulas. Goal: Compare formula profiles. Viz: Grouped Bar Chart showing energy, protein, water per 100ml. Interaction: Static visual reference for formula selection. Justification: Visual comparison is efficient for understanding product differences. Library: Chart.js/Canvas. -->
+    <!-- Application Structure Plan: A task-oriented SPA with four main sections: 1) Ideal Body Weight & Target Nutrition Calculation: Input for height and current weight, calculation and display of Ideal Body Weight (IBW), and adjustable target protein and calorie ranges per kg IBW, showing total target ranges. This section also includes dynamic suggestions for enteral formula combinations to meet these targets. 2) Interactive Nutrition Calculator: Dynamic rows for selecting enteral formulas and inputting amounts (now in 10ml increments), with real-time calculation of water, protein, calories, potassium, salt equivalent, carbohydrates, and lipids for each. 3) Real-time Summary Panel: Displays the grand totals of water, protein, calories, potassium, salt equivalent, carbohydrates, and lipids from the calculator, allowing comparison against the target nutrition from the first section. 4) Nutrient Comparison Chart: A bar chart visualizing the per-100ml nutrient profiles of all available enteral formulas, aiding in formula selection, now including carbohydrate and lipid data. This structure prioritizes goal setting, then calculation, then summary and comparison, creating a comprehensive and intuitive workflow for nutrition management. -->
+    <!-- Visualization & Content Choices: 1) Report Info: Patient height, current weight. Goal: Calculate Ideal Body Weight (IBW) and derive target nutrition. Viz: Input fields for height/weight, display for calculated IBW, input fields for target protein/calorie ranges, display for total target protein/calorie ranges. Interaction: User inputs height/weight, adjusts target ranges; IBW and total targets update via JS. Justification: Provides foundational patient-specific nutritional goals. Library: Vanilla JS. Additionally, a dynamic list of suggested formula combinations to meet these targets is displayed, offering actionable guidance. 2) Report Info: Formula selection and amount input. Goal: Calculate actual intake. Viz: Dynamic list of input rows with 10ml step input for amount and default value of 200ml. Interaction: User selects from dropdown/enters number, row-specific and overall totals update via JS. Justification: Direct manipulation for practical calculation, with improved precision control and a convenient default. Library: Vanilla JS. 3) Report Info: Calculated nutritional values from formulas. Goal: Summarize actual intake. Viz: Large summary cards for total water, protein, calories, potassium, salt equivalent, carbohydrates, and lipids. Interaction: Real-time updates from calculator. Justification: Immediate, high-visibility feedback for current intake, now including additional critical nutrients. Library: Vanilla JS. 4) Report Info: Base nutritional data for all formulas. Goal: Compare formula profiles. Viz: Grouped Bar Chart showing energy, protein, water, potassium, salt equivalent, carbohydrates, and lipids per 100ml. Interaction: Static visual reference for formula selection. Justification: Visual comparison is efficient for understanding product differences, with expanded nutrient visibility. Library: Chart.js/Canvas. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -61,11 +61,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div>
                             <label for="height-input" class="block text-sm font-medium text-stone-600 mb-1">身長 (cm)</label>
-                            <input type="number" id="height-input" min="1" placeholder="例: 160" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="height-input" min="1" placeholder="例: 160" value="160" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label for="current-weight-input" class="block text-sm font-medium text-stone-600 mb-1">現在の体重 (kg)</label>
-                            <input type="number" id="current-weight-input" min="1" placeholder="例: 55" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="current-weight-input" min="1" placeholder="例: 55" value="55" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div class="md:col-span-2 lg:col-span-2 bg-teal-50 p-3 rounded-lg border border-teal-200 flex items-center justify-between">
                             <span class="font-semibold text-teal-800">理想体重 (kg)</span>
@@ -76,11 +76,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
                             <label for="protein-target-min" class="block text-sm font-medium text-stone-600 mb-1">目標タンパク質 (g/kg IBW) 最小</label>
-                            <input type="number" id="protein-target-min" min="0" value="1.2" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="protein-target-min" min="0" value="0.8" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label for="protein-target-max" class="block text-sm font-medium text-stone-600 mb-1">目標タンパク質 (g/kg IBW) 最大</label>
-                            <input type="number" id="protein-target-max" min="0" value="2.0" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="protein-target-max" min="0" value="1.2" step="0.1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div class="md:col-span-2 bg-sky-50 p-3 rounded-lg border border-sky-200 flex items-center justify-between">
                             <span class="font-semibold text-sky-800">目標タンパク量 (g/日)</span>
@@ -91,11 +91,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
                             <label for="calorie-target-min" class="block text-sm font-medium text-stone-600 mb-1">目標カロリー (kcal/kg IBW) 最小</label>
-                            <input type="number" id="calorie-target-min" min="0" value="25" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="calorie-target-min" min="0" value="20" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label for="calorie-target-max" class="block text-sm font-medium text-stone-600 mb-1">目標カロリー (kcal/kg IBW) 最大</label>
-                            <input type="number" id="calorie-target-max" min="0" value="30" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
+                            <input type="number" id="calorie-target-max" min="0" value="25" step="1" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm">
                         </div>
                         <div class="md:col-span-2 bg-rose-50 p-3 rounded-lg border border-rose-200 flex items-center justify-between">
                             <span class="font-semibold text-rose-800">目標カロリー (kcal/日)</span>
@@ -142,6 +142,22 @@
                             <span class="font-semibold text-rose-800">総カロリー (kcal)</span>
                             <span id="total-calories" class="text-2xl font-bold text-rose-900">0.0</span>
                         </div>
+                        <div class="summary-card flex justify-between items-center bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <span class="font-semibold text-purple-800">総カリウム量 (mg)</span>
+                            <span id="total-potassium" class="text-2xl font-bold text-purple-900">0.0</span>
+                        </div>
+                        <div class="summary-card flex justify-between items-center bg-lime-50 p-4 rounded-lg border border-lime-200">
+                            <span class="font-semibold text-lime-800">総食塩相当量 (g)</span>
+                            <span id="total-salt" class="text-2xl font-bold text-lime-900">0.0</span>
+                        </div>
+                        <div class="summary-card flex justify-between items-center bg-orange-50 p-4 rounded-lg border border-orange-200">
+                            <span class="font-semibold text-orange-800">総炭水化物量 (g)</span>
+                            <span id="total-carbohydrate" class="text-2xl font-bold text-orange-900">0.0</span>
+                        </div>
+                        <div class="summary-card flex justify-between items-center bg-fuchsia-50 p-4 rounded-lg border border-fuchsia-200">
+                            <span class="font-semibold text-fuchsia-800">総脂質量 (g)</span>
+                            <span id="total-lipid" class="text-2xl font-bold text-fuchsia-900">0.0</span>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -160,17 +176,27 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // 栄養剤のデータ
+    // energy: kcal/ml, protein: g/ml, water: ml/ml, potassium: mg/ml, salt: g/ml, carbohydrate: g/ml, lipid: g/ml
+    // これらの値は一般的な目安であり、正確な栄養成分は各製品の公式情報をご確認ください。
     const formulaData = [
-        { name: '製品を選択してください', energy: 0, protein: 0, water: 0 },
-        { name: 'ペプタメンAF', energy: 1.0, protein: 0.055, water: 0.83 },
-        { name: 'ペプタメンプレビオ', energy: 1.0, protein: 0.04, water: 0.85 },
-        { name: 'CZ-Hi', energy: 1.5, protein: 0.067, water: 0.76 },
-        { name: 'メイバランス', energy: 1.0, protein: 0.038, water: 0.84 },
-        { name: 'アイソカルサポート', energy: 1.0, protein: 0.04, water: 0.85 },
-        { name: 'アイソカルクリア', energy: 0.8, protein: 0.04, water: 0.90 },
-        { name: 'リーナレンLP', energy: 1.6, protein: 0.03, water: 0.72 },
-        { name: 'ハイネイーゲル', energy: 1.0, protein: 0.044, water: 0.84 },
-        { name: 'ラクフィア', energy: 1.0, protein: 0.03, water: 0.85 }
+        { name: '製品を選択してください', energy: 0, protein: 0, water: 0, potassium: 0, salt: 0, carbohydrate: 0, lipid: 0 },
+        // ペプタメンAFの更新
+        { name: 'ペプタメンAF', energy: 1.5, protein: 19 / 200, water: 155 / 200, potassium: 464 / 200, salt: 0.61 / 200, carbohydrate: 26.4 / 200, lipid: 13.2 / 200 },
+        // ペプタメンプレビオの更新
+        { name: 'ペプタメンプレビオ', energy: 300 / 200, protein: 10.5 / 200, water: 153 / 200, potassium: 320 / 200, salt: 1.24 / 200, carbohydrate: (37.5 + 4.2) / 200, lipid: 12 / 200 },
+        // CZ-Hiの更新 (1袋あたりの容量が不明なため、1.5kcal/mlを基準に、他は267mlで換算)
+        { name: 'CZ-Hi', energy: 1.5, protein: 20.0 / 267, water: 202 / 267, potassium: 600 / 267, salt: 0.91 / 267, carbohydrate: 0.21, lipid: 0.04 }, // 炭水化物と脂質は推定値
+        // メイバランスの更新
+        { name: 'メイバランス', energy: 200 / 200, protein: 7.5 / 200, water: 160 / 200, potassium: 200 / 200, salt: 0.56 / 200, carbohydrate: 0.14875, lipid: 0.0283 }, // 炭水化物と脂質は推定値
+        // アイソカルサポート1.5 Bag 400kcal (267mlで計算)
+        { name: 'アイソカルサポート1.5', energy: 400 / 267, protein: 15.2 / 267, water: 204 / 267, potassium: 320 / 267, salt: 0.92 / 267, carbohydrate: 46.8 / 267, lipid: 18.4 / 267 },
+        // アイソカルクリアの更新 (画像データに基づく)
+        { name: 'アイソカルクリア（経口開始食）', energy: 200 / 200, protein: 10 / 200, water: 166 / 200, potassium: 0, salt: 0 / 200, carbohydrate: 40 / 200, lipid: 0 / 200 },
+        // リーナレンLPの更新
+        { name: 'リーナレンLP', energy: 200 / 125, protein: 2 / 125, water: 94.8 / 125, potassium: 60 / 125, salt: 0.15 / 125, carbohydrate: (35 + 2) / 125, lipid: 5.6 / 125 },
+        // エレンタール（1kcal/mlに調整) の更新 (画像データに基づく)
+        { name: 'エレンタール（1kcal/mlに調整)', energy: 1.0, protein: 14.1 / 300, water: 250 / 300, potassium: 217.6 / 300, salt: (260.0 * 2.54 / 1000) / 300, carbohydrate: 63.4 / 300, lipid: 0.51 / 300 }
     ];
 
     const calculatorRowsContainer = document.getElementById('calculator-rows');
@@ -185,6 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const calorieTargetMaxInput = document.getElementById('calorie-target-max');
     const totalTargetCaloriesDisplay = document.getElementById('total-target-calories');
     const suggestionList = document.getElementById('suggestion-list');
+    const totalPotassiumDisplay = document.getElementById('total-potassium');
+    const totalSaltDisplay = document.getElementById('total-salt');
+    const totalCarbohydrateDisplay = document.getElementById('total-carbohydrate');
+    const totalLipidDisplay = document.getElementById('total-lipid');
+
 
     let uniqueIdCounter = 0;
 
@@ -196,15 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectOptions = formulaData.map(f => `<option value="${f.name}">${f.name}</option>`).join('');
 
         row.innerHTML = `
-            <div class="sm:col-span-4">
+            <div class="sm:col-span-3">
                 <label for="formula-select-${id}" class="block text-sm font-medium text-stone-600 mb-1">栄養剤</label>
                 <select id="formula-select-${id}" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm bg-white" data-type="formula">${selectOptions}</select>
             </div>
             <div class="sm:col-span-2">
                 <label for="amount-input-${id}" class="block text-sm font-medium text-stone-600 mb-1">量 (ml)</label>
-                <input type="number" id="amount-input-${id}" min="0" step="10" placeholder="例: 200" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm" data-type="amount">
+                <input type="number" id="amount-input-${id}" min="0" step="10" placeholder="例: 200" value="200" class="w-full form-input p-2 border border-stone-300 rounded-md shadow-sm" data-type="amount">
             </div>
-            <div class="sm:col-span-5 grid grid-cols-3 gap-2 text-center items-center mt-2 sm:mt-0">
+            <div class="sm:col-span-7 grid grid-cols-6 gap-2 text-center items-center mt-2 sm:mt-0">
                 <div>
                     <p class="text-sm text-stone-500">水分量</p>
                     <p class="font-bold text-lg text-amber-800" data-type="water-result">0.0</p>
@@ -216,6 +247,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                     <p class="text-sm text-stone-500">カロリー</p>
                     <p class="font-bold text-lg text-rose-800" data-type="calories-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">カリウム</p>
+                    <p class="font-bold text-lg text-purple-800" data-type="potassium-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">食塩相当</p>
+                    <p class="font-bold text-lg text-lime-800" data-type="salt-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">炭水化物</p>
+                    <p class="font-bold text-lg text-orange-800" data-type="carbohydrate-result">0.0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-stone-500">脂質</p>
+                    <p class="font-bold text-lg text-fuchsia-800" data-type="lipid-result">0.0</p>
                 </div>
             </div>
             <div class="sm:col-span-1 flex items-center justify-end">
@@ -236,32 +283,52 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalWater = 0;
         let totalProtein = 0;
         let totalCalories = 0;
+        let totalPotassium = 0;
+        let totalSalt = 0;
+        let totalCarbohydrate = 0;
+        let totalLipid = 0;
 
         document.querySelectorAll('.calculator-row').forEach(row => {
             const formulaName = row.querySelector('[data-type="formula"]').value;
             const amount = parseFloat(row.querySelector('[data-type="amount"]').value) || 0;
             const formula = formulaData.find(f => f.name === formulaName);
 
-            let water = 0, protein = 0, calories = 0;
+            let water = 0, protein = 0, calories = 0, potassium = 0, salt = 0, carbohydrate = 0, lipid = 0;
 
             if (formula && amount > 0) {
                 water = formula.water * amount;
                 protein = formula.protein * amount;
                 calories = formula.energy * amount;
+                potassium = formula.potassium * amount;
+                salt = formula.salt * amount;
+                carbohydrate = formula.carbohydrate * amount;
+                lipid = formula.lipid * amount;
             }
             
             row.querySelector('[data-type="water-result"]').textContent = water.toFixed(1);
             row.querySelector('[data-type="protein-result"]').textContent = protein.toFixed(1);
             row.querySelector('[data-type="calories-result"]').textContent = calories.toFixed(1);
+            row.querySelector('[data-type="potassium-result"]').textContent = potassium.toFixed(1);
+            row.querySelector('[data-type="salt-result"]').textContent = salt.toFixed(2);
+            row.querySelector('[data-type="carbohydrate-result"]').textContent = carbohydrate.toFixed(1);
+            row.querySelector('[data-type="lipid-result"]').textContent = lipid.toFixed(1);
 
             totalWater += water;
             totalProtein += protein;
             totalCalories += calories;
+            totalPotassium += potassium;
+            totalSalt += salt;
+            totalCarbohydrate += carbohydrate;
+            totalLipid += lipid;
         });
 
         document.getElementById('total-water').textContent = totalWater.toFixed(1);
         document.getElementById('total-protein').textContent = totalProtein.toFixed(1);
         document.getElementById('total-calories').textContent = totalCalories.toFixed(1);
+        totalPotassiumDisplay.textContent = totalPotassium.toFixed(1);
+        totalSaltDisplay.textContent = totalSalt.toFixed(2);
+        totalCarbohydrateDisplay.textContent = totalCarbohydrate.toFixed(1);
+        totalLipidDisplay.textContent = totalLipid.toFixed(1);
     }
 
     function calculateIBWAndTargets() {
@@ -391,6 +458,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'rgba(251, 191, 36, 0.6)',
                     borderColor: 'rgba(251, 191, 36, 1)',
                     borderWidth: 1
+                }, {
+                    label: 'カリウム (mg/100ml)',
+                    data: chartData.map(f => f.potassium * 100),
+                    backgroundColor: 'rgba(168, 85, 247, 0.6)',
+                    borderColor: 'rgba(168, 85, 247, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '食塩相当量 (g/100ml)',
+                    data: chartData.map(f => f.salt * 100),
+                    backgroundColor: 'rgba(134, 239, 172, 0.6)',
+                    borderColor: 'rgba(134, 239, 172, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '炭水化物 (g/100ml)',
+                    data: chartData.map(f => f.carbohydrate * 100),
+                    backgroundColor: 'rgba(251, 146, 60, 0.6)',
+                    borderColor: 'rgba(251, 146, 60, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '脂質 (g/100ml)',
+                    data: chartData.map(f => f.lipid * 100),
+                    backgroundColor: 'rgba(192, 38, 211, 0.6)',
+                    borderColor: 'rgba(192, 38, 211, 1)',
+                    borderWidth: 1
                 }]
             },
             options: {
@@ -425,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     addRow();
-    calculateIBWAndTargets(); // Initial calculation for IBW and targets
+    calculateIBWAndTargets();
     setupChart();
 });
 </script>
